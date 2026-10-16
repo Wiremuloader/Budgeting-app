@@ -64,8 +64,10 @@ exist on (user, date) and (user, category)).
 * **Multi-currency**: per-account currencies are stored and never mixed, but there is no
   conversion; other-currency accounts are excluded from totals. Transfers between accounts in
   different currencies are rejected.
-* **Notifications**: evaluated when the user opens Overview (throttled to every 10 minutes per
-  process), not by a background scheduler, so email alerts only go out after a visit. Push
+* **Notifications**: evaluated on Overview load (throttled to every 10 minutes per process) and
+  by `/api/cron/notifications`, which needs an external scheduler (host cron, Kubernetes CronJob,
+  Vercel Cron — see DEPLOYMENT.md); nothing runs in the background unless one is set up. The
+  optional daily email digest goes out from 07:00 local time on the first scheduled run. Push
   notifications are designed for (channel interface) but not implemented.
 * **PDF export**: not built; reports have a print-friendly layout (`window.print()`).
 * **Rate limiting** for app endpoints is in-memory (per process).
@@ -82,7 +84,6 @@ exist on (user, date) and (user, category)).
 ## Next steps (suggested order)
 
 1. Integrate an NZ open-banking provider behind `BankingProvider` and run the sync engine against its sandbox.
-2. Background scheduler for notifications + email digests.
-3. Receipt uploads (object storage, type/size validation, malware scanning).
-4. Household sharing (shared accounts/budgets with roles).
-5. Formal accessibility audit and a performance run with 10k+ transactions on PostgreSQL.
+2. Receipt uploads (object storage, type/size validation, malware scanning).
+3. Household sharing (shared accounts/budgets with roles).
+4. Formal accessibility audit and a performance run with 10k+ transactions on PostgreSQL.

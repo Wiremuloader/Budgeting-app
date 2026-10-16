@@ -62,6 +62,7 @@ First e2e run: `npx playwright install chromium`.
 | `BETTER_AUTH_URL` | yes | Public base URL, e.g. `https://ledger.example.nz` |
 | `REQUIRE_EMAIL_VERIFICATION` | no | `true` blocks sign-in until the email is verified (needs email delivery) |
 | `RESEND_API_KEY`, `EMAIL_FROM` | prod | Email delivery for verification/reset/alerts. Without them production refuses to send |
+| `CRON_SECRET` | no | Bearer token for the notification scheduler route `/api/cron/notifications` (see docs/DEPLOYMENT.md) |
 | `ANTHROPIC_API_KEY` | no | Enables the AI assistant. Without it the assistant runs in “direct answers” mode |
 | `ANTHROPIC_MODEL` | no | Defaults to `claude-opus-5-5` |
 | `TOKEN_ENCRYPTION_KEY` | if bank sync | Encrypts provider tokens at rest |
