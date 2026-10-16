@@ -138,6 +138,10 @@ export const userPreferences = pgTable("user_preferences", {
   aiEnabled: boolean("ai_enabled").notNull().default(true),
   onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
   checklistDismissedAt: timestamp("checklist_dismissed_at", { withTimezone: true }),
+  /** Batch email-channel notifications into one daily email instead of sending each immediately. */
+  emailDigest: boolean("email_digest").notNull().default(false),
+  /** Local date (YYYY-MM-DD) of the last digest sent, so each day gets at most one. */
+  lastDigestOn: text("last_digest_on"),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });

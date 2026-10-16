@@ -39,7 +39,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   const period = (PERIODS.find((p) => p.key === sp.period)?.key ?? "month") as OverviewPeriod;
   const db = await getDb();
   const o = await getOverview(db, user.id, prefs, today, period);
-  void evaluateNotifications(db, user.id, prefs, today, o);
+  void evaluateNotifications(db, user.id, prefs, today);
 
   const safe = o.forecast.safe;
   const days = safe.daysUntilHorizon;

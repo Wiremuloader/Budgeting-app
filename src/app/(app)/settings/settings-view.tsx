@@ -24,6 +24,7 @@ interface Prefs {
   safetyBuffer: number;
   lowBalanceThreshold: number;
   aiEnabled: boolean;
+  emailDigest: boolean;
   incomeFrequency: string | null;
 }
 
@@ -75,7 +76,7 @@ export function SettingsView({
         <TabsContent value="categories">
           <Card><CardHeader title="Categories" description="Archived categories keep their history in reports." /><CardBody><CategoryManager categories={categories} /></CardBody></Card>
         </TabsContent>
-        <TabsContent value="notifications"><Notifications rows={notifications} emailAvailable={emailAvailable} /></TabsContent>
+        <TabsContent value="notifications"><Notifications rows={notifications} emailAvailable={emailAvailable} emailDigest={prefs.emailDigest} /></TabsContent>
         <TabsContent value="security"><Security user={user} /></TabsContent>
         <TabsContent value="privacy"><Privacy prefs={prefs} aiAvailable={aiAvailable} /></TabsContent>
         <TabsContent value="data"><Data /></TabsContent>
@@ -147,10 +148,15 @@ function General({ user, prefs }: { user: CurrentUser; prefs: Prefs }) {
   );
 }
 
-function Notifications({ rows, emailAvailable }: { rows: NotifRow[]; emailAvailable: boolean }) {
+function Notifications({ rows, emailAvailable, emailDigest }: { rows: NotifRow[]; emailAvailable: boolean; emailDigest: boolean }) {
   const router = useRouter();
   async function update(type: string, patch: { enabled?: boolean; threshold?: number | null; channels?: ("in_app" | "email")[] }) {
     const r = await updateNotificationPreferenceAction({ type: type as never, ...patch });
+    if (!r.ok) return toast.error(r.error);
+    router.refresh();
+  }
+  async function setDigest(v: boolean) {
+    const r = await updatePreferencesAction({ emailDigest: v });
     if (!r.ok) return toast.error(r.error);
     router.refresh();
   }
@@ -159,6 +165,15 @@ function Notifications({ rows, emailAvailable }: { rows: NotifRow[]; emailAvaila
       <CardHeader title="Alerts" description="Ledger only notifies you about things that need attention, at most a handful a day. In-app notifications are always on for enabled alerts." />
       <CardBody>
         {!emailAvailable && <Alert tone="info" className="mb-4">Email delivery isn’t configured on this server, so alerts appear in the app only.</Alert>}
+        {emailAvailable && (
+          <div className="mb-2 flex items-center gap-3 border-b border-border pb-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium">Daily email digest</p>
+              <p className="text-xs text-muted">Send alerts marked Email together in one morning email instead of one email each.</p>
+            </div>
+            <Switch checked={emailDigest} onCheckedChange={setDigest} label="Daily email digest" />
+          </div>
+        )}
         <ul className="divide-y divide-border">
           {rows.map((r) => (
             <li key={r.type} className="flex flex-wrap items-center gap-3 py-3">

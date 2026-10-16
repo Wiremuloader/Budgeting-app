@@ -1,6 +1,6 @@
-import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import type { Database, Queryable } from "../db";
-import { notificationPreferences, notifications, users, NOTIFICATION_TYPES } from "../db/schema";
+import { notificationPreferences, notifications, userPreferences, users, NOTIFICATION_TYPES } from "../db/schema";
 import type { BudgetMonthView } from "./budget";
 import type { ForecastBundle } from "./forecast";
 import type { GoalView } from "./goals";
@@ -214,8 +214,17 @@ export function draftNotifications(ctx: EvaluationContext, prefs: Map<Notificati
   return out;
 }
 
-/** Store new notifications (dedupe key makes this idempotent) and deliver to enabled channels. */
-export async function saveNotifications(db: Database, userId: string, drafts: DraftNotification[], prefs: Map<NotificationType, PreferenceRow>, maxPerRun = 5) {
+/**
+ * Store new notifications (dedupe key makes this idempotent) and deliver to enabled channels.
+ * With `emailDigest` the email channel is skipped here; `sendDailyDigest` batches those later.
+ */
+export async function saveNotifications(
+  db: Database,
+  userId: string,
+  drafts: DraftNotification[],
+  prefs: Map<NotificationType, PreferenceRow>,
+  { maxPerRun = 5, emailDigest = false }: { maxPerRun?: number; emailDigest?: boolean } = {},
+) {
   if (!drafts.length) return 0;
   // Anti-spam: no more than `maxPerRun` new items per evaluation and 15 per day.
   const [{ today }] = await db
@@ -242,6 +251,7 @@ export async function saveNotifications(db: Database, userId: string, drafts: Dr
     const channels = prefs.get(n.type)?.channels ?? ["in_app"];
     for (const ch of CHANNELS) {
       if (ch.id === "in_app" || !channels.includes(ch.id) || !ch.available()) continue;
+      if (ch.id === "email" && emailDigest) continue;
       try {
         await ch.deliver(userId, u.email, { ...n, href: n.href ?? undefined, severity: n.severity });
         await db.update(notifications).set({ deliveredVia: sql`array_append(${notifications.deliveredVia}, ${ch.id})` }).where(eq(notifications.id, n.id));
@@ -251,6 +261,65 @@ export async function saveNotifications(db: Database, userId: string, drafts: Dr
     }
   }
   return fresh.length;
+}
+
+/**
+ * Email one summary of recent notifications the user wants by email but hasn't had emailed yet.
+ * At most one per local day: the day is claimed with a compare-and-set on `last_digest_on`
+ * before sending, so overlapping runs can't double-send, and a failed send releases the claim.
+ * Returns the number of notifications included (0 when nothing was sent).
+ */
+export async function sendDailyDigest(db: Database, userId: string, today: ISODate): Promise<number> {
+  if (!emailConfigured()) return 0;
+  const [p] = await db
+    .select({ on: userPreferences.emailDigest, last: userPreferences.lastDigestOn })
+    .from(userPreferences)
+    .where(eq(userPreferences.userId, userId));
+  if (!p?.on || (p.last && p.last >= today)) return 0;
+  const prefs = await getPreferencesMap(db, userId);
+  const types = NOTIFICATION_TYPES.filter((t) => prefs.get(t)?.channels.includes("email"));
+  if (!types.length) return 0;
+  const pending = await db
+    .select()
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.userId, userId),
+        inArray(notifications.type, types),
+        isNull(notifications.dismissedAt),
+        gte(notifications.createdAt, new Date(Date.now() - 7 * 86_400_000)),
+        sql`not ('email' = any(${notifications.deliveredVia}))`,
+      ),
+    )
+    .orderBy(notifications.createdAt)
+    .limit(20);
+  if (!pending.length) return 0;
+
+  const claimed = await db
+    .update(userPreferences)
+    .set({ lastDigestOn: today })
+    .where(and(eq(userPreferences.userId, userId), p.last ? eq(userPreferences.lastDigestOn, p.last) : isNull(userPreferences.lastDigestOn)))
+    .returning({ userId: userPreferences.userId });
+  if (!claimed.length) return 0;
+
+  try {
+    const [u] = await db.select({ email: users.email }).from(users).where(eq(users.id, userId));
+    const lines = pending.map((n) => `• ${n.title}\n  ${n.body}`);
+    await getMailer().send({
+      to: u.email,
+      subject: `Ledger: ${pending.length === 1 ? "1 alert" : `${pending.length} alerts`} for ${formatDisplayDate(today)}`,
+      text: `${lines.join("\n\n")}\n\nOpen Ledger to see details. You can choose which alerts are emailed in Settings → Notifications.`,
+    });
+  } catch (e) {
+    // Release the claim so the next run retries today.
+    await db.update(userPreferences).set({ lastDigestOn: p.last }).where(and(eq(userPreferences.userId, userId), eq(userPreferences.lastDigestOn, today)));
+    throw e;
+  }
+  await db
+    .update(notifications)
+    .set({ deliveredVia: sql`array_append(${notifications.deliveredVia}, 'email')` })
+    .where(inArray(notifications.id, pending.map((n) => n.id)));
+  return pending.length;
 }
 
 export async function listNotifications(db: Queryable, userId: string, limit = 30) {

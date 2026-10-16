@@ -28,6 +28,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         safetyBuffer: prefs.safetyBuffer,
         lowBalanceThreshold: prefs.lowBalanceThreshold,
         aiEnabled: prefs.aiEnabled,
+        emailDigest: prefs.emailDigest,
         incomeFrequency: prefs.incomeFrequency,
       }}
       categories={cats.map((c) => ({ id: c.id, name: c.name, group: c.group, archived: Boolean(c.archivedAt), rollover: c.rollover, parentId: c.parentId, alertThresholdBps: c.alertThresholdBps }))}

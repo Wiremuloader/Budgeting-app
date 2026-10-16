@@ -29,6 +29,7 @@ const prefsSchema = z.object({
   safetyBuffer: zCents.refine((n) => n >= 0).optional(),
   lowBalanceThreshold: zCents.refine((n) => n >= 0).optional(),
   aiEnabled: z.boolean().optional(),
+  emailDigest: z.boolean().optional(),
   priorities: z.array(z.string().max(40)).max(8).optional(),
 });
 export async function updatePreferencesAction(input: z.infer<typeof prefsSchema>) {

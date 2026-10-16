@@ -6,7 +6,8 @@ import { getSessionCookie } from "better-auth/cookies";
  * Real authorisation happens on the server for every page, action and API route
  * (requireUser + per-user query scoping) — never here.
  */
-const PUBLIC = ["/sign-in", "/sign-up", "/forgot-password", "/reset-password", "/api/auth", "/api/health"];
+// /api/cron authenticates with CRON_SECRET in the route itself.
+const PUBLIC = ["/sign-in", "/sign-up", "/forgot-password", "/reset-password", "/api/auth", "/api/health", "/api/cron"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
