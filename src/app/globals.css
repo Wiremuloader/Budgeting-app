@@ -1,0 +1,176 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Ledger design tokens.
+ * Warm paper neutrals, ink text, one accent: pounamu (NZ greenstone) jade.
+ * Money semantics: positive = jade, negative = brick, caution = ochre.
+ */
+:root {
+  --bg: #f6f5f1;
+  --surface: #ffffff;
+  --surface-2: #f0eee8;
+  --surface-3: #e8e5dd;
+  --border: #e2ded4;
+  --border-strong: #cfcabd;
+  --text: #16181b;
+  --text-2: #3f434a;
+  --muted: #6b6f76;
+  --accent: #0d7a63;
+  --accent-hover: #0a6653;
+  --accent-fg: #ffffff;
+  --accent-soft: #e2f0ea;
+  --positive: #0d7a63;
+  --negative: #b03f2b;
+  --negative-soft: #f8e7e2;
+  --warning: #a86a12;
+  --warning-soft: #f7ecd6;
+  --info: #2c5a86;
+  --info-soft: #e3ecf5;
+  --ring: #0d7a63;
+  --shadow: 0 1px 2px rgb(22 24 27 / 0.04), 0 1px 1px rgb(22 24 27 / 0.03);
+  --shadow-lg: 0 10px 30px -10px rgb(22 24 27 / 0.18), 0 2px 6px rgb(22 24 27 / 0.06);
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --chart-6: #008300;
+  --chart-7: #6250d6;
+  --chart-8: #e34948;
+  --chart-other: #a3a7ad;
+  --chart-grid: #e7e3da;
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #0e1012;
+  --surface: #15181b;
+  --surface-2: #1b1f23;
+  --surface-3: #23282d;
+  --border: #272c32;
+  --border-strong: #353b42;
+  --text: #ecedee;
+  --text-2: #c7cacd;
+  --muted: #9aa0a7;
+  --accent: #3dbb9b;
+  --accent-hover: #55c9ab;
+  --accent-fg: #06221b;
+  --accent-soft: #10302a;
+  --positive: #4cc4a5;
+  --negative: #ef8a72;
+  --negative-soft: #3a1d17;
+  --warning: #e3ad55;
+  --warning-soft: #33270f;
+  --info: #7fb0e0;
+  --info-soft: #14263a;
+  --ring: #3dbb9b;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 12px 32px -12px rgb(0 0 0 / 0.6);
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
+  --chart-6: #008300;
+  --chart-7: #9085e9;
+  --chart-8: #e66767;
+  --chart-other: #6b7178;
+  --chart-grid: #262b30;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-negative-soft: var(--negative-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-display: var(--font-display), Georgia, serif;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --shadow-card: var(--shadow);
+  --shadow-pop: var(--shadow-lg);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  ::selection {
+    background: var(--accent-soft);
+  }
+}
+
+@utility num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.01em;
+}
+
+@utility card {
+  /* Grid/flex children default to min-width:auto, which lets long content overflow on phones. */
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+  .card {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+}
